@@ -1,6 +1,6 @@
 {
   "name": "stannis",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lightweight durable workflow execution for serverless. Zero dependencies, ESM, plain JS.",
   "type": "module",
   "exports": "./src/index.js",
