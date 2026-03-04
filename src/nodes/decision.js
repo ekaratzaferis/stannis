@@ -39,7 +39,7 @@ export async function executeDecision(node, state, storage) {
 
   let result
   try {
-    result = await mod.default(state.history, { nodeState: state.nodeStates[nodeId] })
+    result = await mod.default(state.history, node.input ?? {}, { nodeState: state.nodeStates[nodeId] })
   } catch (e) {
     state = updateNode(state, nodeId, { status: 'broken', error: e.message })
     state = { ...state, status: 'broken' }

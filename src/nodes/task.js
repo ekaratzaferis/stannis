@@ -42,7 +42,7 @@ export async function executeTask(node, state, storage) {
 
   let result
   try {
-    result = await mod.default(state.history, { nodeState: state.nodeStates[nodeId] })
+    result = await mod.default(state.history, node.input ?? {}, { nodeState: state.nodeStates[nodeId] })
   } catch (e) {
     // Unhandled throw → immediately break
     state = updateNode(state, nodeId, {

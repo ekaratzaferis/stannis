@@ -40,7 +40,7 @@ test('graph: mermaid format returns flowchart string', async () => {
 
   const m = await w.graph('mermaid')
   assert.equal(typeof m, 'string')
-  assert.ok(m.startsWith('flowchart TD'))
+  assert.ok(m.startsWith('flowchart LR'))
   assert.ok(m.includes('-->'))
 })
 
@@ -52,7 +52,7 @@ test('graph: html format returns valid HTML with mermaid', async () => {
   assert.equal(typeof h, 'string')
   assert.ok(h.includes('<!DOCTYPE html>'))
   assert.ok(h.includes('mermaid'))
-  assert.ok(h.includes('flowchart TD'))
+  assert.ok(h.includes('flowchart LR'))
 })
 
 test('graph: invalid format throws', async () => {

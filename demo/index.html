@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>stannis demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      background: #0f1117;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 10px 20px;
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      color: #a78bfa;
+      flex-shrink: 0;
+    }
+
+    .workspace {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Palette ── */
+    .palette {
+      width: 160px;
+      min-width: 160px;
+      background: #1a1d27;
+      border-right: 1px solid #2d3148;
+      padding: 12px 10px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .palette h2 {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .node-card {
+      background: #252840;
+      border: 1px solid #3b3f6e;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .node-card:hover { background: #2e3259; border-color: #6d5fdb; }
+
+    .node-card.selected {
+      background: #2e3259;
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 1px #a78bfa44;
+    }
+
+    .node-card .name { font-weight: 600; font-size: 12px; color: #c4b5fd; margin-bottom: 2px; }
+    .node-card .desc { font-size: 10px; color: #94a3b8; line-height: 1.4; }
+
+    /* ── Builder ── */
+    .builder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #0f1117;
+      background-image: radial-gradient(circle, #2d3148 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .builder-tree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .empty-hint {
+      color: #475569;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 60px;
+      line-height: 1.8;
+    }
+
+    .builder-footer {
+      padding: 10px 16px;
+      background: #0f1117cc;
+      border-top: 1px solid #2d3148;
+      flex-shrink: 0;
+    }
+
+    /* ── Tree nodes ── */
+    .tree-node { margin-bottom: 4px; }
+
+    .node-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      padding: 6px 10px;
+      flex-wrap: wrap;
+    }
+
+    .node-type-badge {
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      min-width: 58px;
+    }
+
+    .service-input {
+      flex: 1;
+      min-width: 160px;
+      background: #0f1117;
+      border: 1px solid #3b3f6e;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      padding: 3px 7px;
+    }
+
+    .service-input:focus { outline: none; border-color: #6d5fdb; }
+
+    .retry-input {
+      width: 48px;
+      background: #0f1117;
+      border: 1px solid #3b3f6e;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-size: 12px;
+      padding: 3px 5px;
+      text-align: center;
+    }
+
+    .retry-input:focus { outline: none; border-color: #6d5fdb; }
+
+    .inline-check {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #94a3b8;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .inline-check input[type="checkbox"] { cursor: pointer; accent-color: #a78bfa; }
+
+    .delete-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #475569;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
+      transition: color 0.15s;
+    }
+
+    .delete-btn:hover { color: #f87171; }
+
+    .node-children {
+      margin-left: 20px;
+      border-left: 2px solid #2d3148;
+      padding-left: 10px;
+      margin-top: 4px;
+    }
+
+    .add-child-row { margin-top: 4px; margin-bottom: 2px; }
+
+    .add-btn {
+      background: #252840;
+      border: 1px dashed #3b3f6e;
+      border-radius: 4px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 4px 10px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .add-btn:hover { color: #a78bfa; border-color: #a78bfa; }
+
+    .clear-btn {
+      background: transparent;
+      border: 1px dashed #3b3f6e;
+      border-radius: 4px;
+      color: #475569;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 4px 10px;
+      margin-left: auto;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .clear-btn:hover { color: #f87171; border-color: #f87171; }
+
+    .id-input {
+      width: 72px;
+      background: transparent;
+      border: 1px dashed #3b3f6e;
+      border-radius: 4px;
+      color: #64748b;
+      font-size: 11px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      padding: 2px 5px;
+    }
+
+    .id-input:focus { outline: none; border-color: #6d5fdb; color: #e2e8f0; }
+    .id-input:not(:placeholder-shown) { color: #c4b5fd; border-style: solid; border-color: #6d5fdb44; }
+
+    .service-select {
+      background: #0f1117;
+      border: 1px solid #3b3f6e;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      padding: 3px 6px;
+      cursor: pointer;
+    }
+
+    .service-select:focus { outline: none; border-color: #6d5fdb; }
+
+    .node-input-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 4px;
+      margin-left: 2px;
+    }
+
+    .input-row-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      padding-top: 5px;
+      min-width: 32px;
+    }
+
+    .task-input-json {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 4px;
+      color: #94a3b8;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11px;
+      padding: 4px 7px;
+      resize: vertical;
+      min-height: 32px;
+    }
+
+    .task-input-json:focus { outline: none; border-color: #6d5fdb; color: #e2e8f0; }
+
+    /* ── Output panel ── */
+    .output {
+      width: 300px;
+      min-width: 280px;
+      background: #1a1d27;
+      border-left: 1px solid #2d3148;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .output-log {
+      overflow-y: auto;
+      max-height: 280px;
+      border-bottom: 1px solid #2d3148;
+      flex-shrink: 0;
+    }
+
+    .log-block { border-bottom: 1px solid #1a1d27; }
+
+    .log-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      padding: 6px 12px 3px;
+    }
+
+    .log-pre {
+      margin: 0;
+      padding: 4px 12px 10px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .output-controls {
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #2d3148;
+      flex-shrink: 0;
+    }
+
+    .run-btn {
+      flex: 1;
+      background: #4f46e5;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px;
+      transition: background 0.15s;
+    }
+
+    .run-btn:hover { background: #6d5fdb; }
+    .run-btn:disabled { background: #374151; cursor: not-allowed; }
+
+    .resume-btn {
+      flex: 1;
+      background: #0f766e;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px;
+      transition: background 0.15s;
+    }
+
+    .resume-btn:hover { background: #14b8a6; }
+
+    .status-area {
+      padding: 10px 12px;
+      border-bottom: 1px solid #2d3148;
+      flex-shrink: 0;
+    }
+
+    .status-label { font-size: 12px; font-weight: 600; }
+    .status-label.completed { color: #4ade80; }
+    .status-label.broken    { color: #f87171; }
+    .status-label.running   { color: #60a5fa; }
+    .status-label.error     { color: #fb923c; }
+
+    .graph-section {
+      flex: 1;
+      border-top: 1px solid #2d3148;
+      min-height: 0;
+      display: none;
+    }
+
+    .graph-frame { width: 100%; height: 100%; border: none; background: #fff; }
+  </style>
+</head>
+<body>
+  <header>stannis demo</header>
+
+  <div class="workspace">
+    <!-- Palette -->
+    <aside class="palette">
+      <h2>Node Palette</h2>
+      <div class="node-card" data-type="task">
+        <div class="name">task</div>
+        <div class="desc">Run a single async service</div>
+      </div>
+      <div class="node-card" data-type="sequence">
+        <div class="name">sequence</div>
+        <div class="desc">Execute nodes in order</div>
+      </div>
+      <div class="node-card" data-type="parallel">
+        <div class="name">parallel</div>
+        <div class="desc">Run all branches concurrently</div>
+      </div>
+      <div class="node-card" data-type="race">
+        <div class="name">race</div>
+        <div class="desc">First branch done wins</div>
+      </div>
+      <div class="node-card" data-type="decision">
+        <div class="name">decision</div>
+        <div class="desc">Branch or loop on output</div>
+      </div>
+    </aside>
+
+    <!-- Flow Builder -->
+    <main class="builder" id="builder">
+      <div class="builder-tree" id="builder-tree"></div>
+      <div class="builder-footer" style="display:flex;gap:8px;align-items:center">
+        <button class="add-btn" id="add-root-btn">+ add root node</button>
+        <button class="clear-btn" id="clear-btn">clear all</button>
+      </div>
+      <div class="graph-section" id="graph-section">
+        <iframe class="graph-frame" id="graph-frame" frameborder="0"></iframe>
+      </div>
+    </main>
+
+    <!-- Output -->
+    <aside class="output">
+      <div class="output-controls">
+        <button class="run-btn" id="run-btn">&#9654; Run</button>
+        <button class="resume-btn" id="resume-btn" style="display:none">&#8635; Resume</button>
+      </div>
+      <div class="output-log" id="output-log"></div>
+      <div class="status-area" id="status-area" style="display:none">
+        <div class="status-label" id="status-label"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ── State ─────────────────────────────────────────────────────────────
+    let tree = []
+    let pendingType = null
+    let lastRun = { definition: null, token: null, flowId: null }
+    let _nextId = 1
+    const newId = () => `n${_nextId++}`
+
+    const COLORS = {
+      task:     '#4ade80',
+      sequence: '#60a5fa',
+      parallel: '#f59e0b',
+      race:     '#f87171',
+      decision: '#a78bfa',
+    }
+
+    const CONTAINERS = new Set(['sequence', 'parallel', 'race'])
+
+    const SERVICE_GROUPS = [
+      { label: 'demo', options: [
+        ['add1',   './demo/services/add1.js'],
+        ['double', './demo/services/double.js'],
+        ['reset',  './demo/services/reset.js'],
+      ]},
+      { label: 'test', options: [
+        ['add1',            './test/services/add1.js'],
+        ['double',          './test/services/double.js'],
+        ['static-value',    './test/services/static-value.js'],
+        ['counter',         './test/services/counter.js'],
+        ['fail',            './test/services/fail.js'],
+        ['controlled-error','./test/services/controlled-error.js'],
+        ['always-error',    './test/services/always-error.js'],
+        ['null-return',     './test/services/null-return.js'],
+      ]},
+    ]
+
+    const DECISION_GROUPS = [
+      { label: 'demo', options: [
+        ['biggerThan', './demo/decisions/biggerThan.js'],
+      ]},
+      { label: 'test', options: [
+        ['always-next',  './test/decisions/always-next.js'],
+        ['always-stop',  './test/decisions/always-stop.js'],
+        ['loop-once',    './test/decisions/loop-once.js'],
+        ['goto-forward', './test/decisions/goto-forward.js'],
+      ]},
+    ]
+
+    function makeNode(type) {
+      const node = { _id: newId(), _nodeId: '', type }
+      if (type === 'task')     { node.service = SERVICE_GROUPS[0].options[0][1]; node.break = false; node.retry = 0; node._inputStr = '{}' }
+      if (type === 'decision') { node.service = DECISION_GROUPS[0].options[0][1]; node._inputStr = '{}' }
+      if (type === 'parallel') { node.async = false }
+      if (CONTAINERS.has(type)) node.nodes = []
+      return node
+    }
+
+    // ── Tree helpers ──────────────────────────────────────────────────────
+    function findNode(arr, id) {
+      for (const n of arr) {
+        if (n._id === id) return n
+        if (n.nodes) { const f = findNode(n.nodes, id); if (f) return f }
+      }
+      return null
+    }
+
+    function deleteNode(arr, id) {
+      const i = arr.findIndex(n => n._id === id)
+      if (i !== -1) { arr.splice(i, 1); return true }
+      for (const n of arr) {
+        if (n.nodes && deleteNode(n.nodes, id)) return true
+      }
+      return false
+    }
+
+    // ── Definition export ─────────────────────────────────────────────────
+    function toDefinition(node) {
+      const def = { type: node.type }
+      if (node._nodeId) def.id = node._nodeId
+      if (node.service) def.service = node.service
+      if (node.type === 'task') {
+        if (node.break) def.break = true
+        if (node.retry > 0) def.retry = node.retry
+      }
+      if ((node.type === 'task' || node.type === 'decision') && node._inputStr) {
+        try {
+          const parsed = JSON.parse(node._inputStr)
+          if (parsed && Object.keys(parsed).length > 0) def.input = parsed
+        } catch { /* invalid JSON — skip */ }
+      }
+      if (node.type === 'parallel' && node.async) def.async = true
+      if (node.nodes) def.nodes = node.nodes.map(toDefinition)
+      return def
+    }
+
+    function buildDefinition() {
+      if (tree.length === 0) return null
+      if (tree.length === 1) return toDefinition(tree[0])
+      return { type: 'sequence', nodes: tree.map(toDefinition) }
+    }
+
+    // ── Rendering ─────────────────────────────────────────────────────────
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    function renderNodeHTML(node) {
+      const color = COLORS[node.type] || '#94a3b8'
+      const isContainer = CONTAINERS.has(node.type)
+
+      let fields = ''
+      if (node.type === 'task' || node.type === 'decision') {
+        const groups = node.type === 'task' ? SERVICE_GROUPS : DECISION_GROUPS
+        const optgroups = groups.map(g => {
+          const opts = g.options.map(([label, path]) =>
+            `<option value="${esc(path)}" ${node.service === path ? 'selected' : ''}>${esc(label)}</option>`
+          ).join('')
+          return `<optgroup label="${esc(g.label)}">${opts}</optgroup>`
+        }).join('')
+        fields += `<select class="service-select" data-id="${node._id}" data-field="service">${optgroups}</select>`
+      }
+      if (node.type === 'task') {
+        fields += `<label class="inline-check">
+          <input type="checkbox" data-id="${node._id}" data-field="break" ${node.break ? 'checked' : ''}>
+          break</label>`
+        fields += `<input class="retry-input" type="number"
+          data-id="${node._id}" data-field="retry"
+          value="${node.retry || 0}" min="0" title="retry count">`
+      }
+      if (node.type === 'parallel') {
+        fields += `<label class="inline-check">
+          <input type="checkbox" data-id="${node._id}" data-field="async" ${node.async ? 'checked' : ''}>
+          async</label>`
+      }
+
+      let inputRow = ''
+      if (node.type === 'task' || node.type === 'decision') {
+        inputRow = `<div class="node-input-row">
+          <span class="input-row-label" title="Passed as 2nd arg: fn(history, input)">input</span>
+          <textarea class="task-input-json" rows="1" data-id="${node._id}" data-field="_inputStr">${esc(node._inputStr || '{}')}</textarea>
+        </div>`
+      }
+
+      let children = ''
+      if (isContainer) {
+        const childrenHTML = (node.nodes || []).map(renderNodeHTML).join('')
+        children = `<div class="node-children">
+          ${childrenHTML}
+          <div class="add-child-row">
+            <button class="add-btn" data-parent-id="${node._id}">+ add child</button>
+          </div>
+        </div>`
+      }
+
+      const idInput = `<input class="id-input" type="text"
+        data-id="${node._id}" data-field="_nodeId"
+        value="${esc(node._nodeId || '')}"
+        placeholder="auto" title="node id (for goTo)">`
+
+      return `<div class="tree-node" data-id="${node._id}">
+        <div class="node-row">
+          <span class="node-type-badge" style="color:${color}">${node.type}</span>
+          ${idInput}
+          ${fields}
+          <button class="delete-btn" data-delete-id="${node._id}" title="Remove">&times;</button>
+        </div>
+        ${inputRow}
+        ${children}
+      </div>`
+    }
+
+    function render() {
+      const el = document.getElementById('builder-tree')
+      if (tree.length === 0) {
+        el.innerHTML = '<p class="empty-hint">Select a type in the palette,<br>then click "+ add root node"</p>'
+        return
+      }
+      el.innerHTML = tree.map(renderNodeHTML).join('')
+    }
+
+    // ── Palette ───────────────────────────────────────────────────────────
+    document.querySelectorAll('.node-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.node-card').forEach(c => c.classList.remove('selected'))
+        card.classList.add('selected')
+        pendingType = card.dataset.type
+      })
+    })
+
+    // ── Add root ──────────────────────────────────────────────────────────
+    document.getElementById('add-root-btn').addEventListener('click', () => {
+      if (!pendingType) { alert('Select a node type in the palette first'); return }
+      tree.push(makeNode(pendingType))
+      render()
+    })
+
+    // ── Builder delegation ────────────────────────────────────────────────
+    document.getElementById('builder').addEventListener('click', e => {
+      const deleteBtn = e.target.closest('[data-delete-id]')
+      if (deleteBtn) {
+        deleteNode(tree, deleteBtn.dataset.deleteId)
+        render()
+        return
+      }
+      const addChildBtn = e.target.closest('[data-parent-id]')
+      if (addChildBtn) {
+        if (!pendingType) { alert('Select a node type in the palette first'); return }
+        const parent = findNode(tree, addChildBtn.dataset.parentId)
+        if (parent) { parent.nodes.push(makeNode(pendingType)); render() }
+      }
+    })
+
+    // Update text inputs and textareas on input (no re-render → preserves focus)
+    document.getElementById('builder').addEventListener('input', e => {
+      const { field, id } = e.target.dataset
+      if (!field || !id) return
+      if (e.target.tagName === 'TEXTAREA' || e.target.type === 'text') {
+        const node = findNode(tree, id)
+        if (node) node[field] = e.target.value
+      }
+    })
+
+    // Update selects, checkboxes, and number inputs on change
+    document.getElementById('builder').addEventListener('change', e => {
+      const { field, id } = e.target.dataset
+      if (!field || !id) return
+      const node = findNode(tree, id)
+      if (!node) return
+      if (e.target.type === 'checkbox') node[field] = e.target.checked
+      else if (e.target.type === 'number') node[field] = parseInt(e.target.value, 10) || 0
+      else node[field] = e.target.value  // select, etc.
+    })
+
+    // ── Run / Resume ──────────────────────────────────────────────────────
+    document.getElementById('run-btn').addEventListener('click', runFlow)
+    document.getElementById('resume-btn').addEventListener('click', resumeFlow)
+
+    async function runFlow() {
+      const definition = buildDefinition()
+      if (!definition) { alert('Build a flow first'); return }
+      lastRun.definition = definition
+      lastRun.token = null
+      await executeRun(definition, null)
+    }
+
+    async function resumeFlow() {
+      await executeRun(lastRun.definition, lastRun.token)
+    }
+
+    function logBlock(label, data) {
+      const div = document.createElement('div')
+      div.className = 'log-block'
+      div.innerHTML = `<div class="log-label">${label}</div><pre class="log-pre">${esc(JSON.stringify(data, null, 2))}</pre>`
+      return div
+    }
+
+    async function executeRun(definition, token) {
+      const statusArea  = document.getElementById('status-area')
+      const statusLabel = document.getElementById('status-label')
+      const resumeBtn   = document.getElementById('resume-btn')
+      const graphSection = document.getElementById('graph-section')
+      const graphFrame   = document.getElementById('graph-frame')
+      const runBtn       = document.getElementById('run-btn')
+      const logEl        = document.getElementById('output-log')
+
+      runBtn.disabled = true
+      statusArea.style.display  = 'block'
+      statusLabel.textContent   = 'Running\u2026'
+      statusLabel.className     = 'status-label running'
+      resumeBtn.style.display   = 'none'
+      graphSection.style.display = 'none'
+
+      const payload = { definition, token }
+      logEl.innerHTML = ''
+      logEl.appendChild(logBlock('Request', payload))
+
+      try {
+        const res = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const result = await res.json()
+        logEl.appendChild(logBlock('Response', result))
+
+        if (result.error) {
+          statusLabel.textContent = `Error: ${result.error}`
+          statusLabel.className = 'status-label error'
+          return
+        }
+
+        lastRun.flowId = result.flowId
+        lastRun.token  = result.token
+
+        const display = result.status === 'completed' ? 'done' : result.status
+        statusLabel.textContent = `Status: ${display}`
+        statusLabel.className   = `status-label ${result.status}`
+
+        if (result.token) {
+          resumeBtn.style.display = 'inline-block'
+        } else {
+          await showGraph(result.flowId)
+        }
+      } catch (err) {
+        logEl.appendChild(logBlock('Error', { error: err.message }))
+        statusLabel.textContent = `Error: ${err.message}`
+        statusLabel.className   = 'status-label error'
+      } finally {
+        runBtn.disabled = false
+      }
+    }
+
+    async function showGraph(flowId) {
+      const graphSection = document.getElementById('graph-section')
+      const graphFrame   = document.getElementById('graph-frame')
+      try {
+        const res = await fetch(`/api/graph?flowId=${encodeURIComponent(flowId)}`)
+        const html = await res.text()
+        graphFrame.srcdoc = html
+        graphSection.style.display = 'block'
+      } catch (err) {
+        console.error('Graph failed:', err)
+      }
+    }
+
+    // ── Clear / Default ───────────────────────────────────────────────────
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      tree = []
+      render()
+    })
+
+    function loadDefaultExample() {
+      const task = (nodeId, service, inputStr) => ({
+        _id: newId(), _nodeId: nodeId, type: 'task',
+        service, break: false, retry: 0, _inputStr: inputStr,
+      })
+
+      tree = [{
+        _id: newId(), _nodeId: 'seq', type: 'sequence',
+        nodes: [
+          task('add1-x',   './demo/services/add1.js', '{"prop":"x"}'),
+          task('add1-y',   './demo/services/add1.js', '{"prop":"y"}'),
+          {
+            _id: newId(), _nodeId: 'par', type: 'parallel', async: false,
+            nodes: [
+              task('par-add1-x', './demo/services/add1.js', '{"prop":"x"}'),
+              task('par-add1-y', './demo/services/add1.js', '{"prop":"y"}'),
+            ],
+          },
+          {
+            _id: newId(), _nodeId: 'race-node', type: 'race',
+            nodes: [
+              task('race-double-x', './demo/services/double.js', '{"prop":"x"}'),
+              task('race-double-y', './demo/services/double.js', '{"prop":"y"}'),
+            ],
+          },
+          {
+            _id: newId(), _nodeId: 'check-x', type: 'decision',
+            service: './demo/decisions/biggerThan.js',
+            _inputStr: '{"prop":"x","bt":5,"nodeId":"race-node"}',
+          },
+        ],
+      }]
+      render()
+    }
+
+    loadDefaultExample()
+  </script>
+</body>
+</html>
