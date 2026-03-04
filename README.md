@@ -1,9 +1,15 @@
 # Stannis
 
-Lightweight durable workflow execution for Node.js.
+**A finite state machine (FSM) workflow engine for serverless Node.js.**
 
-**Mental model:** AWS Step Functions + JS Promises + FSM — designed for serverless environments where a single logical flow may span multiple process invocations.
+Define multi-step flows that survive process restarts, scale across distributed workers, and loop back on themselves — without any external dependencies.
 
+**Mental model:** AWS Step Functions + JS Promises + FSM. Each flow is a durable state machine: it can pause mid-execution, persist its state to any KV store, and resume exactly where it left off — across Lambda invocations, queue workers, or HTTP handlers.
+
+- Finite state machine with forward/backward `goTo` jumps
+- Durable execution — survives process restarts and serverless cold starts
+- Async fan-out — split parallel branches across separate workers/lambdas
+- Break & resume — pause at any node, resume with a token
 - Zero runtime dependencies
 - ESM only (`"type": "module"`)
 - Plain JavaScript with JSDoc types (no build step)

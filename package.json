@@ -1,7 +1,7 @@
 {
   "name": "stannis",
-  "version": "0.2.0",
-  "description": "Lightweight durable workflow execution for serverless. Zero dependencies, ESM, plain JS.",
+  "version": "0.2.1",
+  "description": "Define multi-step flows that survive process restarts, scale across distributed workers, and loop back on themselves — without any external dependencies.",
   "type": "module",
   "exports": "./src/index.js",
   "main": "./src/index.js",
@@ -14,16 +14,25 @@
     "demo": "node demo/server.js"
   },
   "keywords": [
-    "workflow",
-    "durable",
-    "serverless",
-    "state-machine",
     "fsm",
+    "finite-state-machine",
+    "state-machine",
+    "serverless",
+    "serverless-workflow",
+    "durable-execution",
+    "durable",
+    "workflow",
     "orchestration",
     "step-functions",
     "resumable",
     "pipeline",
-    "saga"
+    "saga",
+    "parallel",
+    "retry",
+    "esm",
+    "zero-dependencies",
+    "distributed",
+    "nodejs"
   ],
   "license": "MIT",
   "engines": {
